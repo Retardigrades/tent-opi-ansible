@@ -1,0 +1,54 @@
+# vim: set ft=ansible
+- hosts: oranges
+  remote_user: root
+  vars:
+    max_cpu_freq: 1000000
+    max_ram_freq: 500mhz
+    max_cpu_cores: 4
+  tasks:
+
+    - name: set hostname
+      hostname: name={{ inventory_hostname }}
+      tags:
+        - base
+
+    - name: update system
+      apt:
+        update_cache: yes
+        upgrade: yes
+      tags:
+        - upgrade
+        
+    - name: install packages
+      apt:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - vim
+        - tmux
+        - hostapd-realtek
+        - firmware-atheros
+      tags:
+        - base
+
+    - name: turn gpu off
+      command: /usr/bin/h3consumption -g off
+      tags:
+        - base
+
+    - name: lower mem speed
+      command: /usr/bin/h3consumption -d {{ max_ram_freq }}
+      tags:
+        - base
+
+    - name: set max cpu cores
+      command: /usr/bin/h3consumption -c {{ max_cpu_cores }}
+      tags:
+        - base
+
+    - name: set max cpu speed
+      template:
+        src: etc/default/cpufrequtils
+        dest: /etc/default/cpufrequtils
+      tags:
+        - base
