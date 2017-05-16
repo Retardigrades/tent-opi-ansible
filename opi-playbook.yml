@@ -90,6 +90,30 @@
       tags:
         - ap
 
+    - name: install interfaces
+      template:
+        src: etc/network/interfaces
+        dest: /etc/network/interfaces
+      register: _networking
+      tags:
+        - ap
+
+    - name: networking restart
+      service:
+        name: networking
+        state: restarted
+      tags:
+        - ap
+      when: _networking|changed
+
+    - name: restart hostapd
+      service:
+        name: hostapd.service
+        state: restarted
+        enabled: true
+      tags:
+        - ap
+
     - name: sync filesystem
       command: /bin/sync
       tags:
