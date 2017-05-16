@@ -1,0 +1,2 @@
+#!/bin/sh
+echo \"`/usr/bin/wpa_passphrase {{ inventory_hostname }} {{ wifi_passwd }} | awk -F'=' '$1 ~ "\tpsk" {print $2 }'`\"
