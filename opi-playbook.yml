@@ -5,6 +5,7 @@
     max_cpu_freq: 1000000
     max_ram_freq: 500mhz
     max_cpu_cores: 4
+    wifi_passwd: tent_controller_wifi
   tasks:
 
     - name: set hostname
@@ -26,8 +27,10 @@
       with_items:
         - vim
         - tmux
-        - hostapd-realtek
+        - bridge-utils
+        - hostapd
         - firmware-atheros
+        - firmware-realtek
       tags:
         - base
 
@@ -52,3 +55,44 @@
         dest: /etc/default/cpufrequtils
       tags:
         - base
+
+    - name: set hostapd defaults
+      template:
+        src: etc/default/hostapd
+        dest: /etc/default/hostapd
+      tags:
+        - ap
+
+    - name: create directory for ansible custom facts
+      file: state=directory recurse=yes path=/etc/ansible/facts.d
+      tags:
+        - ap
+
+    - name: install wpa psk fact
+      template:
+        src: etc/ansible/facts.d/wpa_psk.fact
+        dest: /etc/ansible/facts.d/wpa_psk.fact
+        mode: 0755
+      register: _wpa_fact
+      tags:
+        - ap
+
+    - name: reread facts
+      setup: filter=ansible_local
+      when: _wpa_fact|changed
+      tags:
+        - ap
+
+    - name: set hostapd config
+      template:
+        src: etc/hostapd.conf
+        dest: /etc/hostapd.conf
+      tags:
+        - ap
+
+    - name: sync filesystem
+      command: /bin/sync
+      tags:
+        - base
+        - ap
+
