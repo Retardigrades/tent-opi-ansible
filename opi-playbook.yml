@@ -6,6 +6,18 @@
     max_ram_freq: 500mhz
     max_cpu_cores: 4
     wifi_passwd: tent_controller_wifi
+    network: "10.33.33.1/24"
+    controller_ip: "{{ network|ipaddr(1) }}"
+    microcontrollers:
+      led:
+        ip: "{{ network|ipaddr(10) }}"
+        devices:
+          - "00:00:00:00:00:00"
+      gyro:
+        ip: "{{ network|ipaddr(20) }}"
+        devices:
+          - "00:00:00:00:00:00"
+
   tasks:
 
     - name: set hostname
@@ -111,6 +123,59 @@
         name: hostapd.service
         state: restarted
         enabled: true
+      tags:
+        - ap
+
+    - name: install dnsmasq config
+      template:
+        src: etc/dnsmasq.config
+        dest: /etc/dnsmasq.config
+      register: _dnsmasq_config
+      tags:
+        - ap
+
+    - name: restart dnsmasq
+      service:
+        name: dnsmasq.service
+        state: restarted
+        enabled: true
+      when: _dnsmasq_config|changed
+      tags:
+        - ap
+
+    - name: make sure we do not override resolv.conf
+      ini_file:
+        path: /etc/NetworkManager/NetworkManager.conf
+        section: main
+        option: dns
+        value: "none"
+        backup: yes
+      register: _nm_config
+      tags:
+        - ap
+
+    - name: restart network manager
+      service:
+        name: NetworkManager.service
+        state: restarted
+        enabled: yes
+      when: _nm_config|changed
+      tags:
+        - ap
+
+    - name: remove Network Manager resolv.conf
+      file:
+        path: /etc/resolv.conf
+        state: absent
+      when: _nm_config|changed
+      tags:
+        - ap
+
+    - name: setup resolv.conf
+      template:
+        src: etc/resolv.conf
+        dest: /etc/resolv.conf
+        attributes: +i
       tags:
         - ap
 

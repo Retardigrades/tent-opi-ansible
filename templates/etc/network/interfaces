@@ -8,10 +8,9 @@ iface wlan0 inet manual
 
 auto br0
 iface br0 inet static
-	address 192.168.111.1
-	netmask 255.255.255.0
-	network 192.168.111.0
-	broadcast 192.168.111.255
-	gateway 192.168.111.254
+	address {{ controller_ip }}
+	netmask {{ network|ipaddr('netmask') }}
+	network {{ network|ipaddr('network') }}
+	broadcast {{ network|ipaddr('broadcast') }}
 	bridge-ports wlan0
 	bridge_maxwait 5
