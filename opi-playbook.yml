@@ -128,8 +128,9 @@
 
     - name: install dnsmasq config
       template:
-        src: etc/dnsmasq.config
-        dest: /etc/dnsmasq.config
+        src: etc/dnsmasq.conf
+        dest: /etc/dnsmasq.conf
+        backup: yes
       register: _dnsmasq_config
       tags:
         - ap
