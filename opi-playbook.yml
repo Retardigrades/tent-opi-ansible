@@ -41,6 +41,7 @@
         - tmux
         - bridge-utils
         - hostapd
+        - dnsmasq
         - firmware-atheros
         - firmware-realtek
       tags:
@@ -176,7 +177,13 @@
       template:
         src: etc/resolv.conf
         dest: /etc/resolv.conf
-        attributes: +i
+      tags:
+        - ap
+          
+    - name: setup resolv.conf.google
+      template:
+        src: etc/resolv.conf.google
+        dest: /etc/resolv.conf.google
       tags:
         - ap
 
