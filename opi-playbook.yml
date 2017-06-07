@@ -12,11 +12,11 @@
       led:
         ip: "{{ network|ipaddr(10) }}"
         devices:
-          - "00:00:00:00:00:00"
+          - "5c:cf:7f:f8:48:65"
       gyro:
         ip: "{{ network|ipaddr(20) }}"
         devices:
-          - "00:00:00:00:00:00"
+          - "5c:cf:7f:f8:47:ae"
 
   tasks:
 
