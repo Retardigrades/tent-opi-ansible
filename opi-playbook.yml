@@ -17,6 +17,7 @@
         ip: "{{ network|ipaddr(20) }}"
         devices:
           - "5c:cf:7f:f8:47:ae"
+          - "5c:cf:7f:ff:42:6a"
 
   tasks:
 
