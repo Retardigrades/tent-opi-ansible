@@ -45,6 +45,9 @@
         - dnsmasq
         - firmware-atheros
         - firmware-realtek
+        - cmake
+        - libvorbis-dev
+        - portaudio19-dev
       tags:
         - base
 
