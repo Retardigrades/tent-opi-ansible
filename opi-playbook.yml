@@ -197,3 +197,9 @@
         - base
         - ap
 
+    - name: add user for tent software
+      user:
+        name: tent
+        groups: audio,dailout,plugdev
+      tags:
+        - software
