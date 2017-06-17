@@ -1,0 +1,11 @@
+{% for command in ir_commands %}
+begin
+button = {{ command.button }}
+prog = tent-ir
+{% if command.repeat is defined %}
+repeat = {{ command.repeat }}
+{% endif %}
+config = {{ command.config }}
+end
+
+{% endfor %} 
