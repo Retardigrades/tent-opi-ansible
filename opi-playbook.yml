@@ -18,6 +18,43 @@
         devices:
           - "5c:cf:7f:f8:47:ae"
           - "5c:cf:7f:ff:42:6a"
+    sw_user: tent
+    repos:
+      controller: "https://github.com/Retardigrades/tent-update-controller.git"
+      visuals: 
+    ir_commands:
+      - button: A_POWER
+        config: none
+        repeat: 2
+      - button: A_AV
+        config: none
+        repeat: 2
+      - button: A_MINUS
+        config: vol-down
+        repeat: 2
+      - button: A_PLUS
+        config: vol-up
+        repeat: 2
+      - button: A_DOWN
+        config: next-song
+      - button: A_UP
+        config: next-effect
+      - button: B_POWER
+        config: none
+        repeat: 2
+      - button: B_AV
+        config: none
+        repeat: 2
+      - button: B_MINUS
+        config: vol-down
+        repeat: 2
+      - button: B_PLUS
+        config: vol-up
+        repeat: 2
+      - button: B_DOWN
+        config: next-song
+      - button: B_UP
+        config: next-effect
 
   tasks:
 
@@ -199,7 +236,47 @@
 
     - name: add user for tent software
       user:
-        name: tent
-        groups: audio,dailout,plugdev
+        name: "{{ sw_user }}"
+        groups: audio,dialout,plugdev
+      tags:
+        - software
+
+    - name: setup lirc
+      copy:
+        src: etc/lirc/lircd.conf
+        dest: /etc/lirc/lircd,conf
+      tags:
+        - software
+
+    - name: install user lirc config
+      template:
+        src: home/.lircrc
+        dest: "/home/{{ sw_user }}/.lircrc"
+      tags:
+        - software
+
+    - name: set up virtualenv
+      pip:
+        virtualenv: /home/{{ sw_user }}/venv
+        virtualenv_python: python3
+        name: "{{ item }}"
+      with_items:
+        - Flask
+        - python-lirc
+        - requests
+      tags:
+        - software
+
+    - name: Setup controller software repo
+      git:
+        clone: "{{ repos.controller }}"
+        dest: "/home/{{ sw_user }}/controller"
+      tags:
+        - software
+
+    - name: Setup visuals software repo
+      git:
+        clone: "{{ repos.visuals }}"
+        dest: "/home/{{ sw_user }}/visuals"
       tags:
         - software
