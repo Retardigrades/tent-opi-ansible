@@ -5,6 +5,10 @@
     max_cpu_freq: 1000000
     max_ram_freq: 600mhz
     max_cpu_cores: 4
+    root_password: "$6$2Ze2W4nQf1IBxA/$mR/zNWA/KJJWe9vn6Irl8dx..Ntp2NOzTNulqgR3aAJJxgh0Vhj6dve7D6Q8IEiYg9/MgyctxwyOd2zgW7QPA/"
+    root_keys:
+        - "ecdsa-sha2-nistp384 AAAAE2VjZHNhLXNoYTItbmlzdHAzODQAAAAIbmlzdHAzODQAAABhBAOeBfS1BakTxbEsu03pBkx+V2exaF9wvsmYA2X1/X4BBpoG1eOz7Tg3kapzXeCVDX+xWnGIkeJ3pzsHd8p4p6Qs7U3zsr9QPJugw5dHqbASkSfnnUAmZI/TMGVtkaVL0w== jan@JuiceSSH"
+        - "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIEHuaqkHW/BGaz0th7nU8+fCngLzXZwhWOdTCyVLCDga jan@brettchen"
     wifi_passwd: tent_controller_wifi
     network: "10.33.33.1/24"
     controller_ip: "{{ network|ipaddr(1) }}"
@@ -87,6 +91,20 @@
 
     - name: set hostname
       hostname: name={{ inventory_hostname }}
+      tags:
+        - base
+
+    - name: set root password
+      user:
+        name: root
+        password: "{{ root_password }}"
+
+    - name: add root ssh keys
+      authorized_key:
+        user: root
+        key: "{{ item }}"
+        state: present
+      with_items: root_keys
       tags:
         - base
 
