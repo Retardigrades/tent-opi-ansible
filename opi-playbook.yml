@@ -104,7 +104,7 @@
         user: root
         key: "{{ item }}"
         state: present
-      with_items: root_keys
+      with_items: "{{ root_keys }}"
       tags:
         - base
 
