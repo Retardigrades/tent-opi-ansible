@@ -1,0 +1,18 @@
+[Unit]
+Description=visuals
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=tent
+WorkingDirectory={{ visuals_dir }}/build
+Environment="ALSA_CARD=Device"
+ExecStart={{ visuals_dir }}/build/visuals \
+		--led-host {{ microcontrollers.led.ip|ipaddr("address") }} \
+		--led-port {{ microcontrollers.led.data_port }} \
+		--motion-port {{ microcontrollers.gyro.data_port }} \
+		--music {{ music.mountpoint }}/{{ music.path }} 
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

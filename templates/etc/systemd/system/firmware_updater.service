@@ -1,0 +1,19 @@
+[Unit]
+Description=Firmware updater
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=tent
+WorkingDirectory={{ controller_dir }}
+ExecStart={{ venv_home }}/bin/python ./firmware_update.py \
+{% for fw in firmware %}
+		--{{ fw.name }} {{ firmware_dir }}/{{ fw.file }} \
+{% endfor %}
+		--watch stat \
+		--port {{ update_port }}
+
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target

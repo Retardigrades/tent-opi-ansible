@@ -1,0 +1,19 @@
+[Unit]
+Description=Remote control
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=tent
+WorkingDirectory={{ controller_dir }}
+ExecStart={{ venv_home }}/bin/python ./lirc_receiver.py \
+		--name {{ ir_proc }} \
+		--base http://127.0.0.1:8080 \
+{% for command in ir_commands %}
+		{{ command.name }}:{{ command.url }} \
+{% endfor %}
+
+Restart=on-abort
+
+[Install]
+WantedBy=multi-user.target
