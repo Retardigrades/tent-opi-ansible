@@ -3,7 +3,7 @@
   remote_user: root
   vars:
     max_cpu_freq: 1000000
-    max_ram_freq: 500mhz
+    max_ram_freq: 600mhz
     max_cpu_cores: 4
     wifi_passwd: tent_controller_wifi
     network: "10.33.33.1/24"
@@ -13,48 +13,75 @@
         ip: "{{ network|ipaddr(10) }}"
         devices:
           - "5c:cf:7f:f8:48:65"
+        data_port: 7000
+        control_port: 7001
       gyro:
         ip: "{{ network|ipaddr(20) }}"
         devices:
           - "5c:cf:7f:f8:47:ae"
           - "5c:cf:7f:ff:42:6a"
+        data_port: 7002
+    syslog_port: 6656
+    update_port: 6655
     sw_user: tent
     repos:
       controller: "https://github.com/Retardigrades/tent-update-controller.git"
-      visuals: 
+      visuals:  "https://github.com/Retardigrades/visuals.git"
+    ir_proc: tent-ir
     ir_commands:
-      - button: A_POWER
-        config: none
-        repeat: 2
-      - button: A_AV
-        config: none
-        repeat: 2
-      - button: A_MINUS
-        config: vol-down
-        repeat: 2
-      - button: A_PLUS
-        config: vol-up
-        repeat: 2
-      - button: A_DOWN
-        config: next-song
-      - button: A_UP
-        config: next-effect
-      - button: B_POWER
-        config: none
-        repeat: 2
-      - button: B_AV
-        config: none
-        repeat: 2
-      - button: B_MINUS
-        config: vol-down
-        repeat: 2
-      - button: B_PLUS
-        config: vol-up
-        repeat: 2
-      - button: B_DOWN
-        config: next-song
-      - button: B_UP
-        config: next-effect
+      - name: none
+        url: /none
+        buttons:
+          - button: A_POWER
+            repeat: 2
+          - button: A_AV
+            repeat: 2
+          - button: B_POWER
+            repeat: 2
+          - button: B_AV
+            repeat: 2
+
+      - name: vol-down
+        url: /music/voldown
+        buttons:
+          - button: A_MINUS
+            repeat: 2
+          - button: B_MINUS
+            repeat: 2
+
+      - name: vol-up
+        url: /music/volup
+        buttons:
+          - button: A_PLUS
+            repeat: 2
+          - button: B_PLUS
+            repeat: 2
+
+      - name: next-song
+        url: /music/next
+        buttons:
+          - button: A_DOWN
+          - button: B_DOWN
+
+      - name: next-effect
+        url: /effect/next
+        buttons:
+          - button: A_UP
+          - button: B_UP
+
+    venv_home: "/home/{{ sw_user }}/venv"
+    visuals_dir: "/home/{{ sw_user }}/visuals"
+    controller_dir: "/home/{{ sw_user }}/controller"
+    firmware_dir: "/home/{{ sw_user }}/firmware"
+    firmware:
+      - name: led_fw
+        file: led/firmware.bin
+      - name: gyro_fw
+        file: gyro/firmware.bin
+    music:
+      mount: /dev/sda
+      mountpoint: /mnt/music
+      path: oggtent
 
   tasks:
 
@@ -85,6 +112,14 @@
         - cmake
         - libvorbis-dev
         - portaudio19-dev
+        - python3-virtualenv
+        - virtualenv
+        - libboost-program-options-dev
+        - libboost-filesystem-dev
+        - libboost-system-dev
+        - python3-dev
+        - liblircclient-dev
+        - lirc
       tags:
         - base
 
@@ -168,6 +203,21 @@
       tags:
         - ap
 
+    - name: generate hosts entries
+      lineinfile:
+        dest: /etc/hosts
+        regexp: "{{ item.name | replace('.', '\\.') }}"
+        line: "{{ item.ip | ipaddr('address') }} {{ item.name }}"
+      with_items:
+        - name: led
+          ip: "{{ microcontrollers.led.ip }}"
+        - name: gyro
+          ip: "{{ microcontrollers.gyro.ip }}"
+        - name: controller
+          ip: "{{ network | ipaddr('1') }}"
+      tags:
+        - ap
+
     - name: install dnsmasq config
       template:
         src: etc/dnsmasq.conf
@@ -234,17 +284,35 @@
         - base
         - ap
 
+
+    - name: setup syslog for udp
+      template:
+        src: etc/rsyslog.d/udp.conf
+        dest: /etc/rsyslog.d/udp.conf
+      tags:
+        - software
+
+    - name: restart syslog
+      service:
+        name: rsyslog.service
+        state: restarted
+        enabled: true
+      tags:
+        - software
+
     - name: add user for tent software
       user:
         name: "{{ sw_user }}"
         groups: audio,dialout,plugdev
+        shell: /bin/bash
+        state: present
       tags:
         - software
 
     - name: setup lirc
       copy:
         src: etc/lirc/lircd.conf
-        dest: /etc/lirc/lircd,conf
+        dest: /etc/lirc/lircd.conf
       tags:
         - software
 
@@ -252,31 +320,137 @@
       template:
         src: home/.lircrc
         dest: "/home/{{ sw_user }}/.lircrc"
+      become: true
+      become_user: "{{ sw_user }}"
       tags:
         - software
 
     - name: set up virtualenv
       pip:
-        virtualenv: /home/{{ sw_user }}/venv
+        virtualenv: "{{ venv_home }}"
         virtualenv_python: python3
         name: "{{ item }}"
       with_items:
         - Flask
         - python-lirc
         - requests
+      become: true
+      become_user: "{{ sw_user }}"
       tags:
         - software
 
     - name: Setup controller software repo
       git:
-        clone: "{{ repos.controller }}"
-        dest: "/home/{{ sw_user }}/controller"
+        repo: "{{ repos.controller }}"
+        dest: "{{ controller_dir }}"
+      become: true
+      become_user: "{{ sw_user }}"
       tags:
         - software
 
     - name: Setup visuals software repo
       git:
-        clone: "{{ repos.visuals }}"
-        dest: "/home/{{ sw_user }}/visuals"
+        repo: "{{ repos.visuals }}"
+        dest: "{{ visuals_dir }}"
+      become: true
+      become_user: "{{ sw_user }}"
+      tags:
+        - software
+
+    - name: Create visuals build dir
+      file:
+        name: "{{ visuals_dir }}/build"
+        state: directory
+      become: true
+      become_user: "{{ sw_user }}"
+      tags:
+        - software
+
+    - name: Run Cmake
+      command: "cmake -D CMAKE_BUILD_TYPE=Release .."
+      args:
+        chdir: "{{ visuals_dir }}/build"
+      become: true
+      become_user: "{{ sw_user }}"
+      tags:
+        - software
+
+    - name: Run Make
+      command: "make -j3"
+      args:
+        chdir: "{{ visuals_dir }}/build"
+      become: true
+      become_user: "{{ sw_user }}"
+      tags:
+        - software
+
+    - name: Create music mountpoint
+      file:
+        name: "{{ music.mountpoint }}"
+        mode: 777
+        state: directory
+      ignore_errors: yes
+      tags:
+        - software
+
+    - name: Add music to fstab
+      mount:
+        src: "{{ music.mount }}"
+        path: "{{ music.mountpoint }}"
+        fstype: vfat
+        state: present
+        opts: ro
+      tags:
+        - software
+
+    - name: Create visuals systemd file
+      template:
+        src: etc/systemd/system/visuals.service
+        dest: /etc/systemd/system/visuals.service
+      tags:
+        - software
+
+    - name: Create remote systemd file
+      template:
+        src: etc/systemd/system/remote_control.service
+        dest: /etc/systemd/system/remote_control.service
+      tags:
+        - software
+
+    - name: make firmware dir
+      file:
+        name: "{{ firmware_dir }}"
+        state: directory
+      become: true
+      become_user: "{{ sw_user }}"
+      tags:
+        - software
+
+    - name: copy firmware files
+      copy:
+        src: firmware/
+        dest: "{{ firmware_dir}}"
+      become: true
+      become_user: "{{ sw_user }}"
+      tags:
+        - software
+
+    - name: Create updater systemd file
+      template:
+        src: etc/systemd/system/firmware_updater.service
+        dest: /etc/systemd/system/firmware_updater.service
+      tags:
+        - software
+
+    - name: Restart services
+      systemd:
+        name: "{{ item }}"
+        state: restarted
+        enabled: true
+        daemon_reload: yes
+      with_items:
+        - remote_control.service
+        - visuals.service
+        - firmware_updater.service
       tags:
         - software
