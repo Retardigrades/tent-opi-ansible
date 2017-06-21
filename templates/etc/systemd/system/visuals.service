@@ -11,7 +11,9 @@ ExecStart={{ visuals_dir }}/build/visuals \
 		--led-host {{ microcontrollers.led.ip|ipaddr("address") }} \
 		--led-port {{ microcontrollers.led.data_port }} \
 		--motion-port {{ microcontrollers.gyro.data_port }} \
-		--music {{ music.mountpoint }}/{{ music.path }} 
+		--music {{ music.mountpoint }}/{{ music.path }} \
+		--volume {{ music.initial_volume }} \
+		--fps {{ frames_per_second }}
 Restart=on-abort
 
 [Install]

@@ -27,6 +27,7 @@
         data_port: 7002
     syslog_port: 6656
     update_port: 6655
+    frames_per_second: 35
     sw_user: tent
     repos:
       controller: "https://github.com/Retardigrades/tent-update-controller.git"
@@ -38,9 +39,13 @@
         buttons:
           - button: A_POWER
             repeat: 2
-          - button: A_AV
-            repeat: 2
           - button: B_POWER
+            repeat: 2
+
+      - name: seek
+        url: /music/seek/forward
+        buttons:
+          - button: A_AV
             repeat: 2
           - button: B_AV
             repeat: 2
@@ -86,6 +91,7 @@
       mount: /dev/sda
       mountpoint: /mnt/music
       path: oggtent
+      initial_volume: 0.6
 
   tasks:
 
