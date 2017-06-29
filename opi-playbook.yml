@@ -34,8 +34,8 @@
       visuals:  "https://github.com/Retardigrades/visuals.git"
     ir_proc: tent-ir
     ir_commands:
-      - name: none
-        url: /none
+      - name: beat-toggle
+        url: /music/beat/toggle
         buttons:
           - button: A_POWER
             repeat: 2
